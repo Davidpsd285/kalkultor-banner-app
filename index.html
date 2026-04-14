@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DAVIDPSD ADVERTISING</title>
+<style>
+body{font-family:'Segoe UI',Arial;background:linear-gradient(135deg,#1e3c72,#2a5298);padding:20px}
+.container{max-width:1000px;margin:auto;background:#fff;padding:25px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+h2{text-align:center;color:#1e3c72}
+input,select{width:100%;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:8px}
+button{padding:10px;margin:4px;border:none;background:#2a5298;color:#fff;border-radius:8px;cursor:pointer}
+.row{display:flex;gap:10px;margin-bottom:10px}
+.row input:nth-child(1){flex:3}
+.row input:nth-child(2){flex:3}
+.row input:nth-child(3){flex:2}
+.row button{background:red}
+.result{background:#fff;color:#000;padding:15px;margin-top:15px;border:1px solid #ccc;border-radius:10px}
+pre{font-family:monospace;white-space:pre-wrap}
+@media print{body *{visibility:hidden}#hasil,#hasil *{visibility:visible}#hasil{position:absolute;top:0;left:0}}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>DAVIDPSD ADVERTISING</h2>
+
+<input id="nama" placeholder="Nama Pemesan">
+<input id="dp" type="number" placeholder="DP">
+
+<select id="pembulatan">
+<option value="0.5">Pembulatan 0.5</option>
+<option value="1">Pembulatan 1</option>
+<option value="real">Real</option>
+</select>
+
+<select id="harga">
+<option value="30000">Umum - Rp 30.000 /m</option>
+<option value="25000">Reseller - Rp 25.000 /m</option>
+</select>
+
+<div id="bannerList"></div>
+<button onclick="tambahBanner()">+ Banner</button>
+
+<div id="itemList"></div>
+<button onclick="tambahItem()">+ Item</button>
+
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">
+<button onclick="hitung()">🧮 Hitung</button>
+<button onclick="toggleRiwayat()">📋 Riwayat</button>
+<button onclick="hapusSemuaRiwayat()">🗑 Hapus Semua Riwayat</button>
+<button onclick="mulaiBaru()">🔄 Baru</button>
+<button onclick="window.print()">🖨 Print</button>
+<button onclick="kirimWA()">📲 Kirim WA</button>
+</div>
+
+<div id="hasil" class="result"></div>
+</div>
+
+<script>
+function tambahBanner(){
+ let d=document.createElement('div');
+ d.className='row';
+ d.innerHTML=`<input placeholder='Panjang'><input placeholder='Lebar'><input placeholder='Qty'><button onclick='this.parentElement.remove()'>✖</button>`;
+ bannerList.appendChild(d);
+}
+
+function tambahItem(){
+ let d=document.createElement('div');
+ d.className='row';
+ d.innerHTML=`<input placeholder='Nama'><input placeholder='Harga'><input placeholder='Qty'><button onclick='this.parentElement.remove()'>✖</button>`;
+ itemList.appendChild(d);
+}
+
+function bulatMeter(cm,mode){let m=cm/100;if(mode==='real')return m;if(mode==='1')return Math.ceil(m);return Math.ceil(m*2)/2}
+function formatRp(a){return Number(a).toLocaleString('id-ID')}
+
+function getNextInvoice(){
+ let no=localStorage.getItem('noInvoice')||1;
+ localStorage.setItem('noInvoice',parseInt(no)+1);
+ return 'INV-'+String(no).padStart(4,'0');
+}
+
+function hitung(){
+ let mode=pembulatan.value;
+ let harga=parseInt(document.getElementById('harga').value);
+ let total=0,detail='';
+
+ document.querySelectorAll('#bannerList .row').forEach(r=>{
+  let p=r.children[0].value,l=r.children[1].value,q=r.children[2].value;
+  if(p&&l&&q){
+   let pm=bulatMeter(p,mode),lm=bulatMeter(l,mode);
+   let sub=pm*lm*harga*q;
+   total+=sub;
+   detail+=`${p}x${l} | ${pm}x${lm}m x${q} = Rp ${formatRp(sub)}\n`;
+  }
+ });
+
+ document.querySelectorAll('#itemList .row').forEach(r=>{
+  let n=r.children[0].value,h=r.children[1].value,q=r.children[2].value;
+  if(h&&q){let sub=h*q;total+=sub;detail+=`${n} x${q} = Rp ${formatRp(sub)}\n`}
+ });
+
+ let dp=parseInt(dpEl.value)||0;
+ let sisa=total-dp;
+ let nama=namaEl.value||'-';
+ let invoice=getNextInvoice();
+ let tanggal=new Date().toLocaleString('id-ID');
+
+ let struk=`========================================\nDAVIDPSD ADVERTISING (0822-5658-4946)\nSTRUK PEMBAYARAN\n========================================\nNama     : ${nama}\nTanggal  : ${tanggal}\n----------------------------------------\nBANNER\n${detail||''}----------------------------------------\nTOTAL    : Rp ${formatRp(total)}\nDP       : Rp ${formatRp(dp)}\nSISA     : Rp ${formatRp(sisa)}\n========================================\n\nPEMBAYARAN A/N ABDUL DAVID
+BRI
+343101037462534
+
+BSI (Bank Syariah Indonesia)
+7350269864
+
+DANA
+083150007184\n\n========================================\nTerima kasih\n========================================`;
+
+ let data=JSON.parse(localStorage.getItem('riwayat')||'[]');
+ data.unshift({invoice,nama,total,dp,sisa,struk});
+ localStorage.setItem('riwayat',JSON.stringify(data));
+
+ hasil.innerHTML=`<pre>${struk}</pre>`;
+}
+
+function toggleRiwayat(){
+ let d=getData();
+ if(d.length===0){
+  hasil.innerHTML='<pre>Tidak ada riwayat</pre>';
+  return;
+ }
+ let teks = d.map((x,i)=>`==============================\nRiwayat ${i+1}\n${x.struk}\n==============================`).join("\n\n");
+ hasil.innerHTML=`<pre>${teks}</pre>`;
+}
+
+function getData(){return JSON.parse(localStorage.getItem('riwayat')||'[]')}
+
+function hapusSemuaRiwayat(){
+ if(confirm('Yakin hapus semua riwayat?')){
+  localStorage.removeItem('riwayat');
+  hasil.innerHTML='';
+ }
+}
+
+function mulaiBaru(){
+ namaEl.value='';
+ dpEl.value='';
+ bannerList.innerHTML='';
+ itemList.innerHTML='';
+ hasil.innerHTML='';
+ tambahBanner();
+ tambahItem();
+}
+
+function kirimWA(){
+ let text = hasil.innerText;
+ if(!text){ alert('Hitung dulu'); return; }
+ let url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+ window.open(url,'_blank');
+}
+
+let namaEl=document.getElementById('nama');
+let dpEl=document.getElementById('dp');
+let hasil=document.getElementById('hasil');
+let bannerList=document.getElementById('bannerList');
+let itemList=document.getElementById('itemList');
+let pembulatan=document.getElementById('pembulatan');
+
+window.onload=()=>{tambahBanner();tambahItem()}
+</script>
+</body>
+</html>
